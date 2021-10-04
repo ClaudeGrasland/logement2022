@@ -97,7 +97,8 @@ Puis on fait "pivoter" le tableau pour l'obtenir en format large :
 tab_large <- tab_long %>% pivot_wider(id_cols = IRIS, 
                                       names_from = HLML,
                                       names_prefix = "HLM",
-                                      values_from = NB)
+                                      values_from = NB,
+                                      values_fill = 0)
 ```
 
 
