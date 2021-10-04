@@ -1,30 +1,18 @@
 ---
-title: "Analyse spatiale du logement social en Ile de France"
-subtitle: "Stage commun Carthageo-Geoprisme 2021"
-date: "`r Sys.Date()`"
-author: 
- - name: Claude Grasland
-   affiliation: Université de Paris (Diderot)
-image: "figures/citeverte.jpg"   
-logo: "figures/citeverte.jpg"  
+title: "Analyse spatiale et territoriale de données de recensement"
+author: "Claude Grasland (U. Paris Diderot)"
+date: "04/10/2021"
 output:
-  rzine::readrzine:
-    highlight: kate
-    number_sections: true
-csl: Rzine_citation.csl
-bibliography: biblio.bib
-nocite: |
-  @*
-link-citations: true
-#licence: "[![licensebuttons by-sa](https://licensebuttons.net/l/by-sa/3.0/88x31.png)](https://creativecommons.org/licenses/by-sa/4.0)"
-#giturl: "[![Code source on GitHub](https://badgen.net/badge/Code%20source%20on%20/GitHub/blue?icon=github)](xxx)"
-#doi: "[![DOI:xxx](https://zenodo.org/badge/DOI/xxx.svg)](https://doi.org/xxx)"
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: Madrid
+  slidy_presentation: default
+subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 ---
 
 ```{r setup, include=FALSE}
-
-library(knitr)
-library(rzine)
+knitr::opts_chunk$set(echo = FALSE)
 library(xtable)
 library(survey)
 library(knitr)
@@ -33,26 +21,7 @@ library(tidyr)
 library(questionr)
 library(sf)
 library(cartography)
-
-## Global options
-options(max.print="75")
-opts_chunk$set(echo=TRUE,
-	             cache=FALSE,
-               prompt=FALSE,
-               tidy=FALSE,
-               comment=NA,
-               message=FALSE,
-               warning=FALSE,
-               class.source="bg-info",
-               class.output="bg-warning")
-
-# opts_knit$set(width=75)
 ```
-
-
-
-# Introduction {-}
-
 
 
 # 1.ANALYSE SOCIALE : RELATION ENTRE LOGEMENT HLM ET CSP
@@ -62,13 +31,13 @@ opts_chunk$set(echo=TRUE,
 
 Soit le sujet : *Logements sociaux et classes sociales dans le Val de Marne en 2017*
 
-- Définir les "logements sociaux" 
+### Définir les "logements sociaux" 
 Logements HLM ? Logements SRU ?
 
--Définir la notion de "classes sociales" ?
+### Définir la notion de "classes sociales" ?
 Les CSP ? Un regroupement de CSP ? Les revenus ? la génération
 
-- Définir la date
+### Définir la date
 Année 2017 uniquement ? Résultats du RP 2017 (2015-2019) ? 
 
 
@@ -78,16 +47,16 @@ Année 2017 uniquement ? Résultats du RP 2017 (2015-2019) ?
 
 Qu'elles soient justes ou fausses, les hypothèses permettent de cadrer l'analyse.
 
-- CSP et logement social
+### CSP et logement social
 Les logements sociaux sont réservés aux CSP les plus modestes
 
--  Âge et logement social
+### Âge et logement social
 Les logements sociaux sont réservés aux jeunes ménages actifs
 
--  Logement social et territoire
+### Logement social et territoire
 Les logements sociaux sont concentrés dans certains quartiers
 
--   Logement social, âge et territoires
+###  Logement social, âge et territoires
 Les personnes à la retraite quittent les logements sociaux.
 
 
@@ -95,15 +64,16 @@ Les personnes à la retraite quittent les logements sociaux.
 
 Sutout dans le cadre d'un groupe !
 
-- Ne collecter que les données utiles pour répondre aux questions posées
+### Ne collecter que les données utiles pour répondre aux questions posées
 Afin de ne pas être tenté de partir dans toutes les directions
 
-- Archiver soigneusement les programmes et les résultats
+### Archiver soigneusement les programmes et les résultats
 Afin de pouvoir reproduire ultérieurement les analyses sur une autre période, un autre territoire
-- Ne pas attendre d'avoir accumulé tous les résultats pour les commenter
+
+### Ne pas attendre d'avoir accumulé tous les résultats pour les commenter
 Car l'analyse peut suggérer des erreurs ou ouvrir de nouvelles pistes.
 
-- Partir des questions et non pas des outils
+### Partir des questions et non pas des outils
 Faute de quoi on va trouver des réponses (42 ...) sans savoir quelle est la question. 
 
 
@@ -111,13 +81,13 @@ Faute de quoi on va trouver des réponses (42 ...) sans savoir quelle est la que
 
 Les réponses peuvent varier selon le niveau d'agrégation.
 
-- individu / groupe social
+### individu / groupe social
 "Un ouvrier a plus de chance d'habiter en HLM qu'un cadre"
 
-- individu / groupe territorial
+### individu / groupe territorial
 "Les cadres et les ouvriers n'habitent pas dans les mêmes quartiers"
 
--groupe social / groupe territorial
+### groupe social / groupe territorial
 "Les cadres évitent les quartiers où il y a beaucoup de logements sociaux"
 
 
@@ -126,12 +96,12 @@ Les réponses peuvent varier selon le niveau d'agrégation.
 ## Charger les données statistiques
 
 
-- programme
+### programme
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
 tab_ind<-readRDS("data2021/94/indiv2017.RDS")
 ```
 
-- résultat
+### résultat
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
 head(tab_ind[,1:5],2)
 ```
@@ -153,7 +123,7 @@ head(tab_ind[,1:5],2)
 
 Puisqu'on travaille sur les logements, on ne garde que les personnes de références des ménages (LPRM=1).
 
-- programme
+### programme
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
 #table(tab_ind$AGEMEN8)
 tab_sel<- tab_ind %>% 
@@ -161,7 +131,7 @@ tab_sel<- tab_ind %>%
   select(CS1,HLML, IPONDI)
 ```
 
-- résultats
+### résultats
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
 knitr::kable(head(tab_sel,4))
 ```
@@ -183,7 +153,7 @@ kable(metasel[,c(1,3,4)])
 
 On recode les modalités des deux variables en regroupant certaines CSP
 
-- programme
+### programme
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
 tab_sel$HLML<-as.factor(tab_sel$HLML)
 levels(tab_sel$HLML)<-c("HLM-O","HLM-N")
@@ -192,7 +162,7 @@ levels(tab_sel$CS1) <- c("ARCAD","ARCAD","ARCAD","INTER",
                          "EMPOU","EMPOU","RETRA","INACT")
 ```
 
-- résultats
+### résultats
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
 knitr::kable(head(tab_sel,3))
 ```
@@ -201,12 +171,12 @@ knitr::kable(head(tab_sel,3))
 
 La solution la plus simple semble être l'instruction *table()*
 
-- programme
+### programme
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
 tab_cont<-table(tab_sel$HLML,tab_sel$CS1)
 ```
 
-- résultats
+### résultats
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
 knitr::kable(addmargins(tab_cont))
 ```
@@ -216,14 +186,14 @@ knitr::kable(addmargins(tab_cont))
 
 On pondère avec *wtd.table()* du package *questionr*.
 
-- programme
+### programme
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
 library(questionr)
 tab_cont_wtd<-wtd.table(tab_sel$HLML,tab_sel$CS1,
                         weights = tab_sel$IPONDI)
 ```
 
-- résultats
+### résultats
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
 knitr::kable(round(addmargins(tab_cont_wtd),0))
 ```
@@ -282,37 +252,17 @@ mosaicplot(mytable, main =  "Logements HLM par CSP", sub = "Source : INSEE - RP 
 
 ## Conclusion
 
-- 28% des ménages ordinaires du Val de Marne résident en HLM
+### 28% des ménages ordinaires du Val de Marne résident en HLM
 Ce chiffre ne tient toutefois pas compte de la **population concernée** qui peut être plus élevée.
 
-- La part du logement en HLM varie bien en fonction de la CSP des actifs
+### La part du logement en HLM varie bien en fonction de la CSP des actifs
 44% des employés et ouvriers, 26% des intermédiaires, 11% des cadres. 
 
-- Les inactifs sont également nombreux en HLM
+### Les inactifs sont également nombreux en HLM
 33% d'entre eux sont dans ce cas, recouvrant des situations diverses.
 
-- Une partie des retraités demeurent en HLM
+### Une partie des retraités demeurent en HLM
 Environ 25% d'entre eux.
 
-
-
-# Bibliographie {-}
-
-<div id="refs"></div>
-
-
-# Annexes {-}
-
-
-## Infos session  {-}
-
-```{r session_info, echo=FALSE}
-kableExtra::kable_styling(kable(sessionRzine()[[1]], row.names = F))
-kableExtra::kable_styling(kable(sessionRzine()[[2]], row.names = F))
-```
-
-
-
-<br>
 
 

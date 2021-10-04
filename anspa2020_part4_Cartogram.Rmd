@@ -1,0 +1,243 @@
+---
+title: "Analyse spatiale et territoriale de données d'enquête"
+author: "C.GRASLAND"
+date: "17/10/2020"
+output:
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: Madrid
+  slidy_presentation: default
+subtitle: Formation Carthageo-Geoprisme 2020 / 2e journée
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(xtable)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(sf)
+library(sp)
+library(cartography)
+library(cartogram)
+```
+
+
+
+# 4. CARTOGRAMMES ET DISCONTINUITES SOCIALES
+
+## Le package cartogram
+
+Une bonne description de ce package est fournie par T. Giraud 
+
+https://rgeomatic.hypotheses.org/1361
+
+Des exemples de réalisations sont disponibles ici :
+
+https://www.r-graph-gallery.com/cartogram.html
+
+L'installation du package cartogram se fera de préférence depuis github
+
+```{r, echo=TRUE, message =FALSE, warning=FALSE, message=FALSE}
+#devtools::install_github("sjewo/cartogram", force =T)
+```
+
+## Chargement du fonds de carte par iris
+
+### programme
+
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=T, fig.width=4}
+map_iris<-st_read("data/Toulouse/map_iris_tab.shp", quiet = T)
+par(mar=c(0,0,0,0))
+plot(map_iris$geometry, col="lightyellow")
+```
+
+## Chargement du fonds de carte par iris
+
+### vérification du contenu
+
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=T, fig.width=4}
+str(map_iris)
+```
+
+## Transformation en cartograpmme
+
+### Programme de base
+
+Par défaut, le programme effectuee 15 itérations 
+```{r, echo=T}
+map_iris_pop<-cartogram_cont(map_iris,"POP")
+```
+
+## Transformation en cartograpmme
+
+### Programme de base
+
+Ce qui donne une transformation "approximativement" juste même si des trous apparaissent, sans doute liée à des imperfections du fonds de carte.
+
+```{r}
+par(mar=c(0,0,0,0))
+plot(map_iris_pop$geometry, col="lightyellow")
+```
+
+
+## Transformation en cartograpmme
+
+### Sauvegarde de la carte par iris
+
+```{r}
+st_write(map_iris_pop,"data/Toulouse/map_iris_pop.shp",
+         quiet = T, delete_dsn = T)
+```
+
+
+
+## Agrégation des iris en commune
+
+L'agrégation est très facile (Cf. part.2) et elle concerne à la fois les variables (de stock) et les geometries
+
+### programme
+```{r,comment=F,message=F, error=FALSE,echo=T,warning=F}
+map_com_pop <- map_iris_pop %>% 
+  group_by(COM) %>% 
+  summarise(NOM_COM=min(NOM_COM), 
+            VOIT=sum(VOIT,na.rm=T), POP=sum(POP,na.rm=T)) %>%
+  mutate (VOIT_POP = VOIT/POP) %>%
+  st_cast("MULTIPOLYGON")
+
+st_write(map_com_pop,"data/Toulouse/map_com_pop.shp",
+         quiet = T, delete_dsn = T)
+```
+
+## Agrégation des iris en commune
+
+On constate à nouveau que la qualité du fonds de carte n'est pas terrible ... Prévoir des retouches sous SIG ...
+
+### carte
+```{r}
+par(mar=c(0,0,0,0))
+plot(map_com_pop$geometry, col="lightyellow")
+```
+
+## Comparaison de cartes 
+
+### Carte centre/périphérie
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
+par(mar=c(0,0,2,0), mfrow=c(1,2))
+
+#-------
+map<-st_read("data/Toulouse/map_iris_tab.shp", quiet = T)
+map2<-st_read("data/Toulouse/map_com_tab.shp", quiet = T)
+map$cp<-as.factor(map$NOM_COM=="Toulouse")
+levels(map$cp)<-c("Périphérie","Centre")
+
+
+typoLayer(map,
+                      var = "cp",
+                      col = c("lightyellow","orange"),
+                      border = "grey40",
+                      lwd=0.2,
+                      legend.pos="topright",
+                      legend.title.txt = "Typologie")
+
+plot(map2$geometry,col=NA,border="gray20",lwd=1, add=T)
+
+layoutLayer(title = "Carte classique",
+            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
+            col = "grey",
+            scale=4,
+            source="INSEE - RP 2020")
+
+
+# ---------
+map<-map_iris_pop
+map2<-map_com_pop
+
+map$cp<-as.factor(map$NOM_COM=="Toulouse")
+levels(map$cp)<-c("Périphérie","Centre")
+
+
+typoLayer(map,
+                      var = "cp",
+                      col = c("lightyellow","orange"),
+                      border = "grey40",
+                      lwd=0.2,
+                      legend.pos="topright",
+                      legend.title.txt = "Typologie")
+
+
+plot(map2$geometry,col=NA,border="gray20",lwd=1, add=T)
+
+layoutLayer(title = "Cartogramme ",
+            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
+            col = "grey",
+            scale=4,
+            source="INSEE - RP 2020")
+
+
+
+```
+
+
+
+
+
+## Comparaison de cartes 
+
+### Carte du taux de dépendance automobile
+
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
+par(mar=c(0,0,2,0), mfrow=c(1,2))
+
+#-------
+map<-st_read("data/Toulouse/map_iris_tab.shp", quiet = T)
+map2<-st_read("data/Toulouse/map_com_tab.shp", quiet = T)
+
+choroLayer(map,
+                      var = "VOIT_POP",
+                      breaks = c(0,0.3,0.5,0.7,1,1.3,1.6, 1.9,2.5),
+                      nclass = 8,
+                      col = carto.pal(pal1="green.pal", n1=4, pal2 = "orange.pal", n2 = 4),
+                      border = "grey40",
+                      lwd=0.2,
+                      legend.pos="topright",
+                      legend.values.rnd = 2,
+                      legend.title.txt = "Auto/habitant")
+
+plot(map2$geometry,col=NA,border="gray20",lwd=1, add=T)
+
+layoutLayer(title = "Carte classique",
+            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
+            col = "grey",
+            scale=4,
+            source="INSEE - RP 2020")
+
+
+# ---------
+map<-map_iris_pop
+map2<-map_com_pop
+
+choroLayer(map,
+                      var = "VOIT_POP",
+                      breaks = c(0,0.3,0.5,0.7,1,1.3,1.6, 1.9,2.5),
+                      nclass = 8,
+                      col = carto.pal(pal1="green.pal", n1=4, pal2 = "orange.pal", n2 = 4),
+                      border = "grey40",
+                      lwd=0.2,
+                      legend.pos="topright",
+                      legend.values.rnd = 2,
+                      legend.title.txt = "Auto/habitant")
+
+plot(map2$geometry,col=NA,border="gray20",lwd=1, add=T)
+
+layoutLayer(title = "Cartogramme ",
+            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
+            col = "grey",
+            scale=4,
+            source="INSEE - RP 2020")
+
+
+
+```
+

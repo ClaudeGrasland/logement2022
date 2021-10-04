@@ -1,0 +1,335 @@
+---
+title: "Analyse spatiale et territoriale de données de recensement"
+author: "C.GRASLAND"
+date: "22/10/2019"
+output:
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: Madrid
+  slidy_presentation: default
+subtitle: Formation Carthageo-Geoprisme 2019 / 2e journée
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(xtable)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(sf)
+library(sp)
+library(cartography)
+```
+
+
+
+# 3. MODELES SPATIAUX ELEMENTAIRES : AUTOCORRELATION TERRITORIALE ET AUTOCORRELATION SPATIALE
+
+## Objectifs
+
+- Les **modèles statistiques** consistent à expliquer une **variable Y quelconque** en fonction d'une **variable X quelconque**.
+
+- Les **modèles spatiaux** consistent à expliquer une **variable Y spatialisée** en fonction d'une **variable X de position spatiale**. 
+
+- On distinguera deux cas selon que X est une variable qualitative (**autocorrélation territoriale**) ou une variable quantitative (**autocorrelation spatiale**)
+
+
+## Autocorrelation territoriale
+
+### Données
+
+- **Espace de référence** : On travaille sur la métropole de Toulouse
+
+- **Unité d'observation (CODE)** : On prend les iris comme unité d'observtaion
+
+- **Variable dépendante (Y) **: On se propose d'étudier le taux de dépendance automobile
+
+- **Variable indépendante (X)** : On choisit le découpage centre/périphérie
+
+
+
+### Hypothèse 
+
+On pose **H0 : il n'y a pas de différences significatives de taux de dépendance automobile entre les différents territoires.**
+
+## Autocorrelation territoriale
+
+On commence par charger le tableau des données par communes et on en extrait les variables utiles
+
+### programme
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=T}
+map_iris<-st_read("data/Toulouse/map_iris_tab.shp", quiet = T)
+map_cp<-st_read("data/Toulouse/map_cp_tab.shp", quiet = T)
+CODE<-map_iris$COM
+Y<-map_iris$VOIT_POP
+X<-as.factor(map_iris$NOM_COM=="Toulouse")
+levels(X) <- c("Périphérie","Centre")
+table(X)
+```
+
+## Autocorrelation territoriale
+
+On  calcule les paramètres principaux des territoires
+
+### Programme
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=T}
+mini<-tapply(Y,X,FUN="min")
+maxi<-tapply(Y,X,FUN="max")
+moyenne<-tapply(Y,X,FUN="mean")
+ectype<-tapply(Y,X,FUN="sd")
+cv<-moyenne/ectype
+tabres<-data.frame(mini, maxi, moyenne, ectype,cv)
+tabres<-tabres[order(tabres$moyenne),]
+```
+
+
+
+## Autocorrelation territoriale
+
+### Résultat
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=F}
+knitr::kable(round(tabres,2))
+```
+
+
+## Autocorrelation territoriale
+
+On  visualise la dispersion dans chaque territoire
+
+### Programme
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=T,fig.out=FALSE}
+boxplot(Y~X,
+        main= "Dépendance automobile des iris de la métropole de Toulouse en 2016",
+        xlab = "Territoire",
+        ylab = "Automobiles/habitant",
+        sub = "Source : INSEE - RP Logement 2016",
+        col = "gray70")
+
+
+
+```
+
+## Autocorrelation territoriale
+
+### Programme
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=F,fig.height=6}
+boxplot(Y~X,
+        main= "Dépendance automobile des iris de la métropole de Toulouse en 2016",
+        xlab = "Territoire",
+        ylab = "Automobiles/habitant",
+        sub = "Source : INSEE - RP Logement 2016",
+        col = "gray70")
+```
+
+
+## Autocorrelation territoriale
+
+Enfin on teste H0 à l'aide d'une **analyse de la variance**.
+
+### Programme
+```{r, cache.comments=TRUE,comment="",message="", error=FALSE, warning=F,echo=T}
+mod<-lm(Y~X)
+anova(mod)
+```
+
+## Autocorrelation territoriale
+
+On replace les valeurs estimées et les résidus dans le tableau initial ...
+
+```{r, cache.comments=TRUE,comment="",message="", error=FALSE, warning=F,echo=T}
+map_iris$VOIT_POP_OBS<-mod$fitted.values
+map_iris$VOIT_POP_RES<-mod$residuals
+summary(map_iris$VOIT_POP_RES)
+```
+
+Et on cartographie le résultat pour repérer les communes qui sont au-dessus ou en dessous de la moyenne de leur territoire :
+
+## Autocorrelation territoriale
+
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
+par(mar=c(0,0,2,0))
+#plot(map_cp$geometry,lwd=1,col=c("gray80"),border="white")
+#plot(map_iris$geometry, lwd=0.3,add=T,border="white",col=NA)
+
+
+choroLayer(map_iris,
+                      var = "VOIT_POP_RES",
+                      breaks = c(-1,-0.6,-0.3,-0.15,0,0.15,0.3,0.6, 1),
+                      nclass = 8,
+                      col = carto.pal(pal1="blue.pal", n1=4, pal2 = "red.pal", n2 = 4),
+                      border = "gray40",
+                      lwd=0.4,
+                      legend.pos = "topleft",
+                      legend.title.txt = "Auto./ habitant",
+                      legend.values.rnd = 2)
+
+
+plot(map_cp$geometry,lwd=2,border="gray20", add=T, col=NA)
+
+
+layoutLayer(title = "Ecart au gradient de dépendance automobile selon le territoire de référence",
+            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
+            col = "grey",
+            scale=4,
+            source="INSEE - RP 2016")
+
+
+```
+
+
+
+
+## Autocorrelation spatiale
+
+### Données
+
+- **Espace de référence** : On travaille sur la métropole de Toulouse
+
+- **Unité d'observation (CODE)** : On prend les iriscomme unité d'observtaion
+
+- **Variable dépendante (Y) **: On se propose d'étudier le taux de dépendance automobile
+
+- **Variable indépendante (X)** : On choisit la distance au centre de Toulouse (définie par la distance au capitole augmentée de 0.5 km)
+
+
+
+### Hypothèse 
+
+On pose **H0 : il n'y a pas de relation entre le taux de dépendance automobile et la distance au centre de Toulouse.**
+
+
+
+## Autocorrélation spatiale
+
+On commence par calculer la distance au centre de Toulouse ce qui se fait très facilement à l'aide des fonctions **st_centroid** et **st_distance** du **package sf** . Il faut toutefois repérer d'abord l'iris correspondant au centre de l'agglomération (ici, le 82e)
+
+### Programme
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=T, warning=F}
+library(sf)
+# calcul des centroïdes
+x<-st_centroid(map_iris$geometry)
+# calcul des distance au point n°1
+y<-as.vector(st_distance(x[82],x))
+# Ajout de 500 mètres et conversion en kilomètres  
+map_iris$dist<-(y+500)/1000
+```
+
+
+## Autocorrélation spatiale
+
+### Comparaison cartographique des variables X et Y
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
+par(mfrow=c(1,2),mar=c(0,0,0,0))
+choroLayer(map_iris,
+           method="quantile",
+           var = "VOIT_POP",
+           nclass = 6,
+           col = carto.pal(pal1="green.pal", n1=6),
+           border = "grey40",
+           legend.values.rnd = 2,
+           legend.title.txt = "Automobiles / habitant",
+           lwd=0.4)
+choroLayer(map_iris,
+           method="quantile",
+           var = "dist",
+           nclass = 6,
+           col = carto.pal(pal1="orange.pal", n1=6),
+           border = "grey40",
+           legend.values.rnd = 2,
+           legend.title.txt = "Distance au centre (km)",
+           lwd=0.4)
+
+
+```
+
+
+## Autocorrélation spatiale
+
+### Visualisation statistique la relation entre X et Y
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
+X<-map_iris$dist
+Y<-map_iris$VOIT_POP
+plot(X,Y, xlab="Distance au centre",ylab="Dépendance automobile", cex=0.6)
+```
+
+
+## Autocorrélation spatiale
+
+### Programme de test de la relation
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=T, warning=F}
+cor.test(X,Y)
+```
+
+
+## Autocorrélation spatiale
+
+### Programme de calcul de la droite de régression
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=T, warning=F}
+mod2<-lm(Y~X)
+summary(mod2)
+```
+
+
+
+## Autocorrélation spatiale
+
+### Visualisation de la droite de régression
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
+plot(X,Y, xlab="Distance au centre",ylab="Dépendance automobile", cex=0.5)
+#text(X,Y,CODE,cex=0.7,pos = 3)
+abline(mod2,col="red")
+```
+
+## Autocorrelation spatiale
+
+On replace les valeurs estimées et les résidus dans le tableau initial ...
+
+```{r, cache.comments=TRUE,comment="",message="", error=FALSE, warning=F,echo=T}
+map_iris$VOIT_POP_OBS2<-mod2$fitted.values
+map_iris$VOIT_POP_RES2<-mod2$residuals
+summary(map_iris$VOIT_POP_RES2)
+```
+
+Et on cartographie le résultat pour repérer les communes qui sont au-dessus ou en dessous du gradient de croissance de la dépendance automobuile avec la distance au centre
+
+## Autocorrelation spatiale
+
+```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
+par(mar=c(0,0,2,0))
+#plot(map_cp$geometry,lwd=1,col=c("gray80"),border="white")
+#plot(map_iris$geometry, lwd=0.3,add=T,border="white",col=NA)
+
+
+choroLayer(map_iris,
+                      var = "VOIT_POP_RES2",
+                      breaks = c(-1,-0.6,-0.3,-0.15,0,0.15,0.3,0.6, 1),
+                      nclass = 8,
+                      col = carto.pal(pal1="blue.pal", n1=4, pal2 = "red.pal", n2 = 4),
+                      border = "gray40",
+                      lwd=0.4,
+                      legend.pos = "topleft",
+                      legend.title.txt = "Auto./ habitant",
+                      legend.values.rnd = 2)
+
+
+plot(map_cp$geometry,lwd=2,border="gray20", add=T, col=NA)
+
+
+layoutLayer(title = "Ecart au gradient de dépendance automobile selon la distance au centre",
+            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
+            col = "grey",
+            scale=4,
+            source="INSEE - RP 2016")
+
+
+```
+
+## Interprétation des résidus
+
+```{r, out.width="48%"}
+include_graphics("data/Toulouse/Toulouse_revenu_001.png")
+include_graphics("data/Toulouse/Toulouse_revenu_002.png")
+```
+
+

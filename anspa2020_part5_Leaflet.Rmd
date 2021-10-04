@@ -1,0 +1,234 @@
+---
+title: "Analyse spatiale et territoriale de données d'enquête"
+author: "C.GRASLAND"
+date: "17/10/2020"
+output:
+  slidy_presentation: default
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: Madrid
+subtitle: Formation Carthageo-Geoprisme 2020 / 2e journée
+---
+
+
+
+```{r setup, include=TRUE, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# 4. CARTES INTERACTIVES POUR LE WEB : LE PACKAGE LEAFLET
+
+
+## Chargement des packages utiles
+
+### programme
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T}
+library(tidyr)
+library(htmlwidgets)
+library(leaflet)
+library(sf)
+library(htmltools)
+library(dplyr)
+```
+
+
+## Chargement des fonds de carte
+
+Le fonds de carte doit disposer d'une projection connue
+
+### programme
+```{r, cache.comments=TRUE,comment=F,error=FALSE, warning=F,echo=T}
+map_iris<-readRDS("data/Toulouse/map_iris.rda")
+plot(map_iris$geometry)
+```
+
+
+## Reprojection des fonds de carte
+
+Il est nécessaire de reprojeter en crs = 4326 pour pouvoir utiliser ensuite *Leaflet*
+
+### programme
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T}
+map_iris <-st_transform(map_iris,4326)
+```
+
+
+## Préparation des données
+
+On reprend l'exemple du taux de chômage des personnes de référence
+
+### Programme
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T}
+tab_ind<-readRDS("data/Toulouse/don_logt_2016.rda")
+tab<- tab_ind %>% 
+  select(IRIS,TACTM,IPONDL) %>%  # sélection des colonnes
+  filter(TACTM == c("11","12")) %>% # sélection des lignes
+  mutate(PREFM_ACTOCC=case_when(TACTM == "11" ~ IPONDL,!TACTM == "11" ~ 0),
+         PREFM_CHO=case_when(TACTM == "12" ~ IPONDL,!TACTM == "12" ~ 0)) %>% # création des variables
+  select(IRIS,PREFM_ACTOCC,PREFM_CHO) %>% 
+  group_by(IRIS) %>% summarise_all(sum) %>%
+  mutate(PREFM_ACTOCC=round(PREFM_ACTOCC),
+         PREFM_CHO=round(PREFM_CHO))  # arrondis des deux variables
+head(tab)
+```
+
+## Jointure
+
+On effectue la jointure avec le fichier des iris
+
+### programme
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T}
+map_iris_tab<-merge(map_iris,tab,
+                   by.x="CODE_IRIS",by.y="IRIS",
+                   all.x=T,all.y=F)
+```
+
+
+## Agrégation
+
+On agrège le fonds de carte et les données par communes. 
+
+### programme
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T}
+map_com_tab <- map_iris_tab %>% 
+  group_by(INSEE_COM) %>% 
+  summarise(NOM_COM=min(NOM_COM), 
+            PREFM_ACTOCC=sum(PREFM_ACTOCC,na.rm=T),
+            PREFM_CHO=sum(PREFM_CHO,na.rm=T)) %>%
+  st_cast("MULTIPOLYGON")
+plot(map_com_tab$geometry)
+```
+
+## Carte de repérage
+
+### Programme 
+```{r, error=FALSE, warning=F,echo=T, include = T}
+
+#labs <- lapply(seq(nrow(map_iris_tab)), function(i) {
+#  paste0( paste("Commune :",map_iris_tab$NOM_COM[i]), '<p></p>',
+#          paste("Iris :" ,map_iris_tab$NOM_IRIS[i]), '<p></p>') })
+#labs<-lapply(labs, htmltools::HTML)
+#leaflet() %>%
+#  addTiles() %>%
+#    setView(lng=1.449, lat=43.605 , zoom=13) %>%
+#    addPolygons(data=map_iris_tab, weight=1, col=c("black"), opacity=0.30, label = labs) %>%
+#    addPolygons(data =map_com_tab, fill= FALSE, color = 'black',weight =2, opacity=0.25)
+
+```
+
+## Carte de repérage
+
+### Carte
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=F, include = T}
+
+# Define labels
+labs <- lapply(seq(nrow(map_iris_tab)), function(i) {
+  paste0( paste("Commune :",map_iris_tab$NOM_COM[i]), '<p></p>',
+          paste("Iris :" ,map_iris_tab$NOM_IRIS[i]), '<p></p>') })
+labs<-lapply(labs, htmltools::HTML)
+leaflet() %>%
+  addTiles() %>%
+    setView(lng=1.449, lat=43.605 , zoom=13) %>%
+    addPolygons(data=map_iris_tab, weight=1, col=c("black"), opacity=0.30, label = labs) %>%
+    addPolygons(data =map_com_tab, fill= FALSE, color = 'black',weight =2, opacity=0.25)
+
+```
+
+
+
+## Cartographie d'une proportion Z = V/P
+
+### Préparation des données
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T, include = T}
+# Choose and prepare data
+map<-map_iris_tab
+map$V <- map$PREFM_CHO
+map$P <- map$PREFM_CHO + map$PREFM_ACTOCC
+nameV<-"nombre de chômeurs (15-64 ans)"
+nameP<-"nombre d'actifs (15-64 ans)"
+nameZ<-"Tx de chômage (15-64 ans)"
+minP<-50
+coefZ <-100
+map<-map[,c("NOM_COM","NOM_IRIS","V","P")]
+map<-map[map$P>minP,]
+map$Z<-round(coefZ*map$V/map$P,1)
+
+```
+
+
+## Cartographie d'une proportion Z = V/P
+
+### Préparation de la palette
+
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T, include = T}
+# Choose Threshold
+
+mycut<-quantile(map$Z, c(0,1/6, 2/6, 3/6,4/6,5/6,1 ))
+
+mycut<-round(mycut,1)
+bin_pal = colorBin('Spectral', 
+                   map$Z,
+                   bins=mycut,
+                   reverse=T,)
+```
+
+
+## Cartographie d'une proportion Z = V/P
+
+### Préparation des menus interactifs
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T, include = T}
+# Define labels
+labs <- lapply(seq(nrow(map)), function(i) {
+  paste0( paste("Commune :",map$NOM_COM[i]), '<p></p>',
+          paste("Iris :" ,map$NOM_IRIS[i]), '<p></p>', 
+          paste(nameV,":", map$V[i]), '<p></p>',
+          paste(nameP,":", map$P[i]),'<p></p>',
+          paste(nameZ,":", map$Z[i]),'<p></p>'
+          ) 
+})
+labs<-lapply(labs, htmltools::HTML)
+```
+
+## Cartographie d'une proportion Z = V/P
+
+### Réalisation de la carte
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=T, include = T}
+#leaflet() %>%
+#  addTiles() %>%
+#     setView(lng=1.449, lat=43.605 , zoom=13) %>%
+#    addPolygons(data = map, fillColor = ~bin_pal(Z),
+#              color = 'grey', weight = 0.4, fillOpacity = 0.6, 
+#              highlightOptions = highlightOptions(weight = 2, color = 'black'),
+#              label = labs)%>%
+#  addLegend(data = map, pal = bin_pal, title = nameZ,
+#            values = ~Z, position = 'topright')%>%
+#  addCircleMarkers(data=st_centroid(map$geometry, quiet =T),
+#    radius = 8*sqrt(map$V/max(map$V)),
+#    fillColor = "gray50",
+#    stroke = FALSE, fillOpacity = 0.5) %>%
+#    addPolygons(data = map_com_tab, fill= FALSE, color = 'black',weight =2)
+
+```
+
+
+## Cartographie d'une proportion Z = V/P
+
+### Carte interactive
+```{r, cache.comments=TRUE,comment=F, error=FALSE, warning=F,echo=F, include = T}
+leaflet() %>%
+  addTiles() %>%
+     setView(lng=1.449, lat=43.605 , zoom=13) %>%
+    addPolygons(data = map, fillColor = ~bin_pal(Z),
+              color = 'grey', weight = 0.4, fillOpacity = 0.6, 
+              highlightOptions = highlightOptions(weight = 2, color = 'black'),
+              label = labs)%>%
+  addLegend(data = map, pal = bin_pal, title = nameZ,
+            values = ~Z, position = 'topright')%>%
+  addCircleMarkers(data=st_centroid(map$geometry, quiet =T),
+    radius = 8*sqrt(map$V/max(map$V)),
+    fillColor = "gray50",
+    stroke = FALSE, fillOpacity = 0.5) %>%
+    addPolygons(data = map_com_tab, fill= FALSE, color = 'black',weight =2)
+
+```
