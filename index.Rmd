@@ -1,0 +1,69 @@
+---
+title: "Analyse spatiale du logement social en Ile de France"
+subtitle: "Stage commun Carthageo-Geoprisme 2021"
+date: "`r Sys.Date()`"
+author: 
+ - name: Claude Grasland
+   affiliation: Université de Paris (Diderot)
+image: "figures/citeverte.jpg"   
+logo: "figures/citeverte.jpg"  
+output:
+  rzine::readrzine:
+    highlight: kate
+    number_sections: true
+csl: Rzine_citation.csl
+bibliography: biblio.bib
+nocite: |
+  @*
+link-citations: true
+#licence: "[![licensebuttons by-sa](https://licensebuttons.net/l/by-sa/3.0/88x31.png)](https://creativecommons.org/licenses/by-sa/4.0)"
+#giturl: "[![Code source on GitHub](https://badgen.net/badge/Code%20source%20on%20/GitHub/blue?icon=github)](xxx)"
+#doi: "[![DOI:xxx](https://zenodo.org/badge/DOI/xxx.svg)](https://doi.org/xxx)"
+---
+
+```{r setup, include=FALSE}
+
+library(knitr)
+library(rzine)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=FALSE,
+               prompt=FALSE,
+               tidy=FALSE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE,
+               class.source="bg-info",
+               class.output="bg-warning")
+
+# opts_knit$set(width=75)
+```
+
+
+
+# Introduction {-}
+
+
+
+# Bibliographie {-}
+
+<div id="refs"></div>
+
+
+# Annexes {-}
+
+
+## Infos session  {-}
+
+```{r session_info, echo=FALSE}
+kableExtra::kable_styling(kable(sessionRzine()[[1]], row.names = F))
+kableExtra::kable_styling(kable(sessionRzine()[[2]], row.names = F))
+```
+
+
+
+<br>
+
+
