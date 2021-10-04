@@ -24,7 +24,7 @@ library(cartography)
 ```
 
 
-# 1.ANALYSE SOCIALE : RELATION ENTRE LOGEMENT HLM ET CSP
+# 1.Analyse sociale : tableau de contingence
 
 
 ## Définir le sujet

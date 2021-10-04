@@ -8,7 +8,7 @@ output:
     fonttheme: structurebold
     theme: Madrid
   slidy_presentation: default
-subtitle: Formation Carthageo-Geoprisme 2020 / 2e journée
+subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 ---
 
 ```{r setup, include=FALSE}
@@ -18,6 +18,7 @@ library(survey)
 library(knitr)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 library(questionr)
 library(sf)
 library(cartography)
@@ -25,15 +26,42 @@ library(cartography)
 
 
 
-# 2. CARTOGRAPHIE : L'EXEMPLE DU TAUX DE DEPENDANCE AUTOMOBILE A TOULOUSE
+# 2. Données spatiales (sf)
 
-## Charger les données statistiques
+##  Le format sf (spatial features)
 
-On importe le fichier des individus localisés dans la métropole de Toulouse
+La cartographie et plus généralement les opérations géométriques sur des données spatiales dans R peuvent facilement être effectuées avec le **package sf** (spatial features) qui crée des objets uniques  rassemblant à la fois 
+
+- un tableau de données (l'équivalent du fichier .dbf)
+- une géométrie (l'équivalent du fichier .shp)
+- une projection (l'équivalent du fichier .prj)
+
+Lorsqu'on récupère des fonds de carte au format shapefile (.shp) ou dans d'autres formats standards comme GeoJson, la première tâche consiste donc à les convertir au formt sf afin de pouvoir les utiliser facilement dans R. L'importation se fait à l'aide de l'instruction `st_read` en indiquant juste le nom du fichier .shp à charger. Les autres fichiers (.dbf ou .proj) seront lus également et intégrés dans l'objet qui hérite de la double classe *data.frame* et *sf*.
+
+##  Etapes de préparation des données
+
+Dans notre exemple, nous allons suivre les étapes suivantes :
+
+1. Préparer les données statistiques par IRIS dans un *data.frame*
+2. Charger un fonds de carte par IRIS au format *sf*
+3. Effectuer une jointure entre les deux fichiers par le code IRIS
+4. Sauvegarder le résultat
+5. Agréger les données statistiques et géométriques par commune
+6. Sauvegarder le résultat.
+
+
+
+
+
+
+
+## Préparer les données statistiques
+
+On importe le fichier des individus :
 
 ### programme
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
-tab_ind<-readRDS("data/Toulouse/don_logt_2016.rda")
+tab_ind<-readRDS("data2021/94/indiv2017.RDS")
 ```
 
 ### résultat
@@ -42,361 +70,221 @@ head(tab_ind[,1:5],3)
 ```
 
 
+##  Agréger les données 
+
+On commence par créer un *tableau long* croisant les deux variables et leur effectif pondéré : 
+
+### programme
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
+tab_long<- tab_ind %>%
+           filter(LPRM == 1)%>%
+           group_by(IRIS,HLML)%>%
+           summarise(NB=sum(IPONDI))
+
+
+```
+
+### résultat
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
+knitr::kable(head(tab_long,5),digits=2)
+```
+
+##  Pivoter le tableau
+
+Puis on fait "pivoter" le tableau pour l'obtenir en format large :
+
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
+tab_large <- tab_long %>% pivot_wider(id_cols = IRIS, 
+                                      names_from = HLML,
+                                      names_prefix = "HLM",
+                                      values_from = NB)
+```
+
+
+### résultat
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
+knitr::kable(head(tab_large,5),digits=2)
+```
+
+## Ajouter de nouvelles variables
+
+On ajoute de nouvelles variables telles que le nombre total de ménage et le % de ménages en HLM : 
+
+
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
+tab<- tab_large %>% mutate(TOT = HLM1+HLM2,
+                           HLMpct = 100*HLM1/TOT)
+```
+
+
+### résultat
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
+knitr::kable(head(tab,5),digits=2)
+```
+
+## Examiner la distribution statistique 
+
+On examine l'histogramme donnant distribution statistique du % de ménages ordinaires résidant en HLM par IRIS.
+
+### programme
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
+p <- ggplot(tab) + aes (x = HLMpct) +
+                   geom_histogram(breaks = c(0,10,20,30,40,50,
+                                             60,70,80,90, 100)) +
+                   scale_x_continuous("% de ménages en HLM") +
+                   scale_y_continuous("Nombre d'IRIS") +
+                   ggtitle(label = "Distribution des logements sociaux dans le Val de Marne",
+                           subtitle = "Source : INSEE, RP 2017")
+                            
+
+```
+
+## Examiner la distribution statistique 
+
+### résultat
+```{r, cache.comments=TRUE,warning=F,message=F, error=FALSE,echo=F, fig.width=6, fig.height = 4}
+p
+```
+
+
+
+
+
+
+
 ## Charger les données géométriques
 
-On importe le fichier des iris de Toulouse en ne gardant que les colonnes utiles et en les recodant.
+On importe le fichier des iris du Val-de-Marne qui est au format sf en ne gardant que les colonnes utiles
 
 ### programme
 ```{r,comment=F,message=F, error=FALSE, comments = F, echo=T}
-map_iris <- readRDS("data/Toulouse/map_iris.rda")
+map_iris <- readRDS("data2021/94/map_iris.RDS")
 map_iris<-map_iris[,c(4,5,1,2,7)]
 names(map_iris)<-c("IRIS","NOM_IRIS","COM","NOM_COM","geometry")
 ```
 
 ### résultat
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
+class(map_iris)
 knitr::kable(head(as.data.frame(map_iris)[,1:4],2))
 ```
 
 
-## Visualisation du fonds iris
+## Visualisation du fonds iris avec sf
 
 On peut facilement produire une carte vierge des iris du Grand Paris en faisant un plot de la colonne *geometry* du fichier sf
 
-### programme
-```{r,comment=F,message=F, error=FALSE, comments = F, echo=T}
+```{r,comment=F,message=F, error=FALSE, comments = F, echo=T, fig.width=5, fig.height=4}
 plot(map_iris$geometry,col="lightyellow")
 ```
 
 
-## Fusion des données statistiques et géométriques
-
-Grâce aux nouveaux packages de R (*dplyr* et *sf*) il est possible d'**agréger simultanément les statistiques et les géométries** après les avoir stockés dans un même objet de type "sf"
-
-Du coup, on peut gagner beaucoup de temps dans les traitetements et les analyses cartographiques, en particulier si l'on veut tester différents niveaux d'agrégation.
 
 
-##  Agrégation des données individuelles par iris (1/2)
 
 
-### programme
-```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
-tab<- tab_ind %>%
-      filter(VOIT !="X")%>%
-      group_by(IRIS,VOIT)%>%
-      summarise(NB=sum(IPONDL))%>%
-      spread(key=VOIT, value=NB, fill=0) 
-names(tab)<-c("IRIS","VOIT0","VOIT1","VOIT2","VOIT3")
-tab$VOIT<-tab$VOIT1+2*tab$VOIT2+3*tab$VOIT3
-tab$POP<-tab$VOIT0+tab$VOIT1+tab$VOIT2+tab$VOIT3
-tab$VOIT_POP <-tab$VOIT/tab$POP
-tab<-tab[,c(1,6,7,8)]
-```
-
-##  Agrégation des données individuelles par communes (2/2)
-
-### résultat
-```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
-knitr::kable(head(tab,8),digits=2)
-```
-
-
-## Jointure des données communales (stock) et du fonds de carte
+## Jointure des données IRIS et du fonds de carte
 
 ### programme 
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T,warning=F}
 map_iris_tab<-merge(map_iris,tab,
                    by.x="IRIS",by.y="IRIS",
                    all.x=T,all.y=F)
-st_write(map_iris_tab,"data/Toulouse/map_iris_tab.shp",
-         quiet = T, delete_dsn = T)
 ```
-
-N.B. Enlever l'instruction *delete_dsn=T* si le fonds de carte n'existe pas encore.
-
 
 ### résultat
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
-knitr::kable(head(as.data.frame(map_iris_tab)[,1:6],3),digits=2)
+knitr::kable(head(map_iris_tab,3),digits=2)
 ```
 
-## Agrégation des iris en commune
+## Sauvegarde du fichier par IRIS
+
+On sauvegarde notre fichier au format .RDS de R 
+
+
+```{r,comment=F,message=F, error=FALSE,echo=T,warning=F}
+saveRDS(map_iris_tab,"data2021/94/map_iris_hlm.RDS")
+```
+
+
+
+## Agrégation statistique + géométriques
+
+Grâce aux nouveaux packages de R (*dplyr* et *sf*) il est possible d'**agréger simultanément les statistiques et les géométries** après les avoir stockés dans un même objet de type "sf"
+
+Du coup, on peut gagner beaucoup de temps dans les traitements et les analyses cartographiques, en particulier si l'on veut tester différents niveaux d'agrégation.
+
+
+## Agrégation des IRIS en communes
 
 L'agrégation est très facile et elle concerne à la fois les variables (de stock) et les geometries
 
 ### programme
 ```{r,comment=F,message=F, error=FALSE,echo=T,warning=F}
 map_com_tab <- map_iris_tab %>% 
-  group_by(COM) %>% 
-  summarise(NOM_COM=min(NOM_COM), 
-            VOIT=sum(VOIT,na.rm=T), POP=sum(POP,na.rm=T)) %>%
-  mutate (VOIT_POP = VOIT/POP) %>%
+  group_by(COM, NOM_COM) %>% 
+  summarise(HLM1=sum(HLM1,na.rm=T), 
+            HLM2=sum(HLM2,na.rm=T)) %>%
   st_cast("MULTIPOLYGON")
 
-st_write(map_com_tab,"data/Toulouse/map_com_tab.shp",
-         quiet = T, delete_dsn = T)
-```
+map_com_tab <- map_com_tab %>%  mutate(TOT = HLM1+HLM2,
+                                  HLMpct = 100*HLM1/TOT) 
 
+```
 
 
 
 ## Agrégation des iris en communes
 
-### résultat
+### résultat statistique
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
+knitr::kable(head(st_drop_geometry(map_com_tab),3),digits=2)
+```
+
+## Agrégation des iris en communes
+
+### résultat géométrique
 ```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
 plot(map_com_tab$geometry,col ="lightyellow")
 ```
 
+## Examiner la distribution statistique 
 
-## Agrégation des communes en Centre-Périphérie
-
-On veut construire une carte opposant la commune centre et le reste de la métropole.
+On examine l'histogramme donnant distribution statistique du % de ménages ordinaires résidant en HLM par Commune.
 
 ### programme
-```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE, warning=F,echo=T}
-map_com_tab$CP <- "Périphérie"
-map_com_tab$CP[map_com_tab$NOM_COM=="Toulouse"] <-"Centre"
-map_cp_tab <- map_com_tab %>% 
-  group_by(CP) %>% 
-  summarise(VOIT=sum(VOIT,na.rm=T), 
-            POP=sum(POP,na.rm=T)) %>%
-  mutate (VOIT_POP = VOIT/POP) %>%
-  st_cast("MULTIPOLYGON")
+```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=T}
+p <- ggplot(map_com_tab) + aes (x = HLMpct) +
+                   geom_histogram(breaks = c(0,10,20,30,40,50,
+                                             60,70,80,90,100)) +
+                   scale_x_continuous("% de ménages en HLM") +
+                   scale_y_continuous("Nombre de communes") +
+                   ggtitle(label = "Distribution des logements sociaux dans le Val de Marne",
+                           subtitle = "Source : INSEE, RP 2017")
+                            
 
-st_write(map_cp_tab,"data/Toulouse/map_cp_tab.shp",
-         quiet = T, delete_dsn = T)
 ```
 
-N.B. Enlever l'instruction *delete_dsn=T* si le fonds de carte n'existe pas encore.
-
-
-## Agrégation des communes en EPT
+## Examiner la distribution statistique 
 
 ### résultat
-```{r, cache.comments=TRUE,comment=F,message=F, error=FALSE,echo=F}
-plot(map_cp_tab$geometry,col ="lightyellow")
+```{r, cache.comments=TRUE,warning=F,message=F, error=FALSE,echo=F, fig.width=6, fig.height = 4}
+p
 ```
 
 
 
 
-## Cartographie par iris de Toulouse 
-
-On va utiliser le package *cartography* mis au point par les ingénieurs de l'UMS 2414 RIATE. Les différents morceaux de programme ci-dessous sont à executer simultanément. 
-
-### Programme (1/3) : trace les fonds de carte iris et com
-
-
-map<-map_iris_tab  
-
-map2<-map_com_tab  
-
-par(mar=c(0,0,2,0))  
-
-plot(map2\$geometry,lwd=1,col=c("gray70"),border="white")   
-
-plot(map\$geometry, lwd=0.3,add=T,border="white",col=NA)
 
 
 
 
+## Sauvegarde du fichier par commune
+
+On sauvegarde notre fichier au format .RDS de R 
 
 
-## Cartographie par iris de la métropole de Toulouse
-
-### Programme (2/3) : trace la carte (POP & VOIT_POP)
-
-
-propSymbolsChoroLayer(map,   
-                      var = "POP",   
-                      inches = 0.10,   
-                      var2 = "VOIT_POP",   
-                      breaks = c(0,0.3,0.5,0.7,1,1.3,1.6,1.9,2.5),   
-                      nclass = 8,   
-                      col = carto.pal(pal1="green.pal", n1=4, pal2 = "orange.pal", n2 = 4),   
-                      border = "grey40",   
-                      lwd=0.2,   
-                      legend.var.pos="topright",   
-                      legend.var.values.rnd = 0,   
-                      legend.var.title.txt = "Population",    
-                      legend.var.style = "e",   
-                      legend.var2.pos = "topleft",   
-                      legend.var2.title.txt = "Auto./ habitant",   
-                      legend.var2.values.rnd = 1)    
-  
-
-## Cartographie par iris de la métropole de Toulouse
-
-### Programme (3/3) : ajoute l'habillage de la carte
-
-layoutLayer(title = "Dépendance automobile à Toulouse en 2016",   
-            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",   
-            col = "grey",   
-            scale=4,   
-            source="INSEE - RP 2016")   
-   
-
-
-
-## Cartographie par iris de la métropole de Toulouse
-
-```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
-map<-map_iris_tab
-map2<-map_com_tab
-
-par(mar=c(0,0,2,0))
-plot(map2$geometry,lwd=1,col=c("gray70"),border="white")
-plot(map$geometry, lwd=0.3,add=T,border="white",col=NA)
-
-
-propSymbolsChoroLayer(map,
-                      var = "POP",
-                      inches = 0.10,
-                      var2 = "VOIT_POP",
-                      breaks = c(0,0.3,0.5,0.7,1,1.3,1.6, 1.9,2.5),
-                      nclass = 8,
-                      col = carto.pal(pal1="green.pal", n1=4, pal2 = "orange.pal", n2 = 4),
-                      border = "grey40",
-                      lwd=0.2,
-                      legend.var.pos="topright",
-                      legend.var.values.rnd = 0,
-                      legend.var.title.txt = "Population", 
-                      legend.var.style = "e",
-                      legend.var2.pos = "topleft",
-                      legend.var2.title.txt = "Auto./ habitant",
-                      legend.var2.values.rnd = 1)
-
-
-layoutLayer(title = "Dépendance automobile dans la métropole de Toulouse en 2016 - par iris",
-            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
-            col = "grey",
-            scale=4,
-            source="INSEE - RP 2020")
-
+```{r,comment=F,message=F, error=FALSE,echo=T,warning=F}
+saveRDS(map_com_tab,"data2021/94/map_com_hlm.RDS")
 ```
 
-## Cartographie par iris de la commune de Toulouse
-
-```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
-map<-map_iris_tab[map_iris_tab$NOM_COM=="Toulouse",]
-map2<-map_com_tab[map_com_tab$NOM_COM=="Toulouse",]
-
-par(mar=c(0,0,2,0))
-plot(map2$geometry,lwd=1,col=c("gray70"),border="white")
-plot(map$geometry, lwd=0.3,add=T,border="white",col=NA)
-
-
-propSymbolsChoroLayer(map,
-                      var = "POP",
-                      inches = 0.10,
-                      var2 = "VOIT_POP",
-                      breaks = c(0,0.3,0.5,0.7,1,1.3,1.6, 1.9,2.5),
-                      nclass = 8,
-                      col = carto.pal(pal1="green.pal", n1=4, pal2 = "orange.pal", n2 = 4),
-                      border = "grey40",
-                      lwd=0.2,
-                      legend.var.pos="topright",
-                      legend.var.values.rnd = 0,
-                      legend.var.title.txt = "Population", 
-                      legend.var.style = "e",
-                      legend.var2.pos = "topleft",
-                      legend.var2.title.txt = "Auto./ habitant",
-                      legend.var2.values.rnd = 1)
-
-
-layoutLayer(title = "Dépendance automobile dans la commune de Toulouse - par iris",
-            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
-            col = "grey",
-            scale=4,
-            source="INSEE - RP 2016")
-
-
-```
-
-
-
-## Cartographie par communes due la métropole de Toulouse
-
-```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
-map<-map_com_tab
-map2<-map_cp_tab
-
-par(mar=c(0,0,2,0))
-plot(map2$geometry,lwd=1,col=c("gray70"),border="white")
-plot(map$geometry, lwd=0.3,add=T,border="white",col=NA)
-
-
-propSymbolsChoroLayer(map,
-                      var = "POP",
-                      inches = 0.6,
-                      var2 = "VOIT_POP",
-                      breaks = c(0,0.3,0.5,0.7,1,1.3,1.6, 1.9,2.5),
-                      nclass = 8,
-                      col = carto.pal(pal1="green.pal", n1=4, pal2 = "orange.pal", n2 = 4),
-                      border = "grey40",
-                      lwd=0.2,
-                      legend.var.pos="topright",
-                      legend.var.values.rnd = 0,
-                      legend.var.title.txt = "Population", 
-                      legend.var.style = "e",
-                      legend.var2.pos = "topleft",
-                      legend.var2.title.txt = "Auto./ habitant",
-                      legend.var2.values.rnd = 1)
-
-
-layoutLayer(title = "Dépendance automobile dans la métropole de Toulouse en 2016 - par communes",
-            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
-            col = "grey",
-            scale=4,
-            source="INSEE - RP 2016")
-
-
-```
-
-## Cartographie Centre Périphérie 
-
-```{r, cache.comments=TRUE,comment="",message=F, error=FALSE,echo=F, warning=F}
-map<-map_cp_tab
-map2<-map_cp_tab
-par(mar=c(0,0,2,0))
-plot(map2$geometry,lwd=1,col=c("gray70"),border="white")
-plot(map$geometry, lwd=0.3,add=T,border="white",col=NA)
-
-
-propSymbolsChoroLayer(map,
-                      var = "POP",
-                      inches = 0.6,
-                      var2 = "VOIT_POP",
-                      breaks = c(0,0.3,0.5,0.7,1,1.3,1.6, 1.9,2.5),
-                      nclass = 8,
-                      col = carto.pal(pal1="green.pal", n1=4, pal2 = "orange.pal", n2 = 4),
-                      border = "grey40",
-                      lwd=0.5,
-                      legend.var.pos="topright",
-                      legend.var.values.rnd = 0,
-                      legend.var.title.txt = "Population", 
-                      legend.var.style = "e",
-                      legend.var2.pos = "topleft",
-                      legend.var2.title.txt = "Auto./ habitant",
-                      legend.var2.values.rnd = 1)
-
-
-layoutLayer(title = "Dépendance automobile dans le centre et la périphérie de Toulouse en 2016",
-            author = "(c) Claude GRASLAND, UMR Géographie-cités, 2020",
-            col = "grey",
-            scale=4,
-            source="INSEE - RP 2016")
-
-```
-
-
-## Conclusion
-
-### Au niveau Centre-Périphérie
-Dépendance automobile beaucoup plus forte de la périphérie. Population plus grande dans le centre que dans la périphérie.
-
-### Au niveau des communes
-Organisation générale en gradient. Hausse de la dépendance en fonction de la distance au centre et (sans doute) de la présence de lignes de transport en commun. 
-
-### Au niveau des iris
-Existence de variatons parfois importantes dans une même commune, notamment à l'intérieur de la commune de Toulouse
