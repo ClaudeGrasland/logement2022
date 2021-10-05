@@ -74,7 +74,7 @@ Avant toute exploitation du fichier il est fortement recommandé d'analyser en d
 Le fichier initial au format .csv a été importé à l'aide de la fonction `fread()` du package `data.table` car elles est rapide et relativement robuste face aux erreurs de codage. Le résultat a été stocké dans un fichier .RDS pour réduire sa taille. On peut désormais le charger rapidement avec `readRDS()` 
 
 ```{r}
-
+rpls <- readRDS("data2021/94/RPLS2020.RDS")
 ```
 
 
