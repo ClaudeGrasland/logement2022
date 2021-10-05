@@ -1,0 +1,83 @@
+---
+title: "Analyse spatiale et territoriale de données de recensement"
+author: "C.GRASLAND"
+date: "15/10/2020"
+output:
+  beamer_presentation:
+    colortheme: beaver
+    fonttheme: structurebold
+    theme: Madrid
+  slidy_presentation: default
+subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(xtable)
+library(survey)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(questionr)
+library(sf)
+library(mapsf)
+```
+
+
+
+# Données RPLS
+
+
+## Source
+
+Le répertoire des logements locatifs des bailleurs sociaux (RPLS) a pour objectif de dresser l’état global du parc de logements locatifs de ces bailleurs sociaux au 1er janvier d’une année. Il est alimenté par les informations transmises par les bailleurs sociaux. La transmission des informations pour la mise à jour annuelle du répertoire des logements locatifs est obligatoire. Les données sont ensuite géolocalisées à l'adresse et mis à disposition des utilisateurs sur le [**site du ministère de la transition écologique**](https://www.statistiques.developpement-durable.gouv.fr/logement) 
+
+Les fichiers sont disponibles en général par régions mais livrés par départements dans le cas de l'Ile de France. Nous allons utilisé ici le fichier du 1er janvier 2020 accessible à l'adresse suivante
+
+https://www.statistiques.developpement-durable.gouv.fr/le-parc-locatif-social-au-1er-janvier-2020-0
+
+
+## Métadonnées
+
+Le fichier de données brutes au format .csv est accompagné d'un document excel précisant le code des variables et la façon dont elles ont été obtenues.
+
+```{r}
+knitr::include_graphics("figures/RPLS_meta.png",dpi = 200)
+```
+
+
+## Spatialisation
+
+Le fichier indique pour chaque logement sa localisation précise en terme d'adresse mais aussi d'étage dans un immeuble. A partir de ces données qualitatives, l'INSEE a procédé à un géocodage qui aboutit à la création de deux champs  :
+
+- coordonnées de latitude et longitude non projetées 
+- coordonnées de position en projection Lambert officielle
+
+Selon les analyses on peut utiliser l'une ou l'autre de ces coordonnées. Mais la meilleur solution consiste à **créer un fichier de type sf (spatial features)** en coordonnées WGS94 qu'on pourra ensuite reprojeter dans le système de son choix. 
+
+
+
+## Stratégie
+
+Avant toute exploitation du fichier il est fortement recommandé d'analyser en détail les métadonnées et de définir une stratégie d'analyse. 
+
+1. **choisir une première zone d'étude** de petite taille et localisée de préférence dans un espace que l'on connaît bien.
+2. **choisir des variables intéressantes** dont l'on connaît bien la signification et dont on a analysé en détail les métadonnées 
+3. **vérifier la qualité des données** en regardant notamment le nombre de valeurs manquantes, le dégré de précision, etc. 
+4. **sélectionner des données auxiliaires** issues d'autres sources que l'on souhaite croiser avec celles du RPLS en s'assurant de leur compatibilité (espace, temps, définition, ...) 
+5. **Ajouter les coordonnées spatiales** et stocker le résultat dans un fichier de type sf comportant les indications de projection.
+
+
+## Importation du fichier
+
+Le fichier initial au format .csv a été importé à l'aide de la fonction `fread()` du package `data.table` car elles est rapide et relativement robuste face aux erreurs de codage. Le résultat a été stocké dans un fichier .RDS pour réduire sa taille. On peut désormais le charger rapidement avec `readRDS()` 
+
+```{r}
+
+```
+
+
+
+
+
