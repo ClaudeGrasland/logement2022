@@ -12,7 +12,7 @@ subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 library(xtable)
 library(survey)
 library(knitr)
@@ -22,6 +22,7 @@ library(ggplot2)
 library(questionr)
 library(sf)
 library(mapsf)
+library(data.table)
 ```
 
 
@@ -42,7 +43,7 @@ https://www.statistiques.developpement-durable.gouv.fr/le-parc-locatif-social-au
 
 Le fichier de données brutes au format .csv est accompagné d'un document excel précisant le code des variables et la façon dont elles ont été obtenues.
 
-```{r}
+```{r, echo=FALSE}
 knitr::include_graphics("figures/RPLS_meta.png",dpi = 200)
 ```
 
@@ -69,13 +70,112 @@ Avant toute exploitation du fichier il est fortement recommandé d'analyser en d
 5. **Ajouter les coordonnées spatiales** et stocker le résultat dans un fichier de type sf comportant les indications de projection.
 
 
-## Importation du fichier
+## Importation du fichier .csv 
 
-Le fichier initial au format .csv a été importé à l'aide de la fonction `fread()` du package `data.table` car elles est rapide et relativement robuste face aux erreurs de codage. Le résultat a été stocké dans un fichier .RDS pour réduire sa taille. On peut désormais le charger rapidement avec `readRDS()` 
+Le fichier initial au format .csv est importé à l'aide de la fonction `fread()` du package `data.table` car elles est rapide et relativement robuste face aux erreurs de codage. Il faut tout de même préciser le type d'encodage avec `encoding ="UTF-8"` ainsi que le caractère décimal avec `dec=","`. 
+
+```{r, eval=FALSE}
+ library(data.table)
+rpls <- fread("data2021/93/geoloc2020_detail_IDF_dep_93.csv",
+              encoding = "UTF-8",
+              dec=",")
+
+rpls<-as.data.frame(rpls)
+
+saveRDS(rpls,"data2021/93/RPLS2020.RDS")
+```
+
+Le résultat est converti en `data.frame()` puis stocké dans un fichier .RDS.
+
+## Examen du fichier .RDS
+
+On importe le fichier enregistré au format RDS et on vérifie sa taille avec dim() et sont ype avec class()
 
 ```{r}
-rpls <- readRDS("data2021/94/RPLS2020.RDS")
+don <- readRDS("data2021/94/RPLS2020.RDS")
+dim(don)
+class(don)
+
 ```
+Il s'agit bien d'un tableau de données classique de type data.frame. Il comporte 177902 lignes (chacune correspondant à un logement) et 73 variables (décrites dans les métadonnées).
+
+## Choix de la zone d'étude
+
+On décide de limiter notre analyse dans un premier temps à quatre communes voisines présentant des profils différents. On peut tester leur profil de respect de la loi SRU en 2019 sur l'application suivante : https://www.ecologie.gouv.fr/sru/
+
+- **Bonneuil-sur-Marne (94011)**: large excédent ( > 25% , pas de pénalité)
+- **Chennevières-sur-Marne (94019) ** : léger déficit (22.76%, 58 k€)
+- **Sucy-en-Brie: déficit (94071)** : (19.93% , 150k€ ) 
+- **Ormesson-sur Marne (94055)** : très fort déficit (2.29%, 665 k€)
+
+On relève leur code INSEE afin de pouvoir faciliter l'extraction des données.
+
+## Choix des variables 
+
+On va se limiter ici à un très petit nombre de variables 
+
+### variables de localisation
+- result_label : adresse
+- CODECOM : nom de la commune
+- DEPCOM : code insee de la commune
+- PLG_IRIS : code de l'IRIS dans la commune
+- latitude : coordonnées latitude
+- longitude: coordonnée longitude
+- X : coordonnée projetée (EPSG = 2154)
+- Y : coordonnée projetée (EPSG = 2154)
+
+### variables thématiques
+- CONSTRUCT : année de construction
+- SURFHAB : surface habitable en m2
+- NBPIECE : nombre de pièces
+
+
+## Extraction du fichier
+
+On applique la double sélection des individus et des variables en nous servant des fonctions `filter()`et `select()`du package dplyr.on aboutit ici à un fichier de 8139 lignes et 11 variables. 
+
+```{r}
+sel <- don %>% 
+  filter(DEPCOM %in% c("94011","94019",
+                       "94071","94055")) %>%
+  select(LIBCOM, DEPCOM, PLG_IRIS,
+        latitude,longitude,X,Y,
+        CONSTRUCT,SURFHAB,NBPIECE,
+        result_label) 
+
+dim(sel)
+```
+## Recodage et typage
+
+Certaines variables doivent être recodées ou changées de type afin de faciliter leur exploitation ultérieure par R.
+
+```{r}
+sel$DEPCOM <- as.character(sel$DEPCOM)
+sel$PLG_IRIS <- paste(sel$DEPCOM,sel$PLG_IRIS, sep = "")
+sel$SURFHAB <- as.numeric(sel$SURFHAB)
+
+```
+
+
+## Résumé rapide
+
+On produit un résumé rapide des variables retenues :
+
+
+```{r}
+summary(sel[,4:10])
+
+```
+
+## Sauvegarde du fichier
+
+On sauvegarde le fichier obtenu au format .RDS afin de garder le formatage des variables : 
+
+```{r}
+saveRDS(sel,"data2021/94/RPLS2020_sel.RDS")
+```
+
+
 
 
 
