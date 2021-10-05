@@ -76,13 +76,13 @@ Le fichier initial au format .csv est importé à l'aide de la fonction `fread()
 
 ```{r, eval=FALSE}
  library(data.table)
-rpls <- fread("data2021/93/geoloc2020_detail_IDF_dep_93.csv",
+rpls <- fread("data2021/94/geoloc2020_detail_IDF_dep_94.csv",
               encoding = "UTF-8",
               dec=",")
 
 rpls<-as.data.frame(rpls)
 
-saveRDS(rpls,"data2021/93/RPLS2020.RDS")
+saveRDS(rpls,"data2021/94/RPLS2020.RDS")
 ```
 
 Le résultat est converti en `data.frame()` puis stocké dans un fichier .RDS.
@@ -115,10 +115,10 @@ On relève leur code INSEE afin de pouvoir faciliter l'extraction des données.
 On va se limiter ici à un très petit nombre de variables 
 
 ### variables de localisation
-- result_label : adresse
-- CODECOM : nom de la commune
-- DEPCOM : code insee de la commune
-- PLG_IRIS : code de l'IRIS dans la commune
+- result_id : code de l'adresse
+- result_label : label de l'adresse
+- LIBCOM : nom de la commune
+- DEPCOM : code de la commune
 - latitude : coordonnées latitude
 - longitude: coordonnée longitude
 - X : coordonnée projetée (EPSG = 2154)
@@ -130,6 +130,9 @@ On va se limiter ici à un très petit nombre de variables
 - NBPIECE : nombre de pièces
 
 
+
+
+
 ## Extraction du fichier
 
 On applique la double sélection des individus et des variables en nous servant des fonctions `filter()`et `select()`du package dplyr.on aboutit ici à un fichier de 8139 lignes et 11 variables. 
@@ -138,10 +141,10 @@ On applique la double sélection des individus et des variables en nous servant 
 sel <- don %>% 
   filter(DEPCOM %in% c("94011","94019",
                        "94071","94055")) %>%
-  select(LIBCOM, DEPCOM, PLG_IRIS,
+  select(result_id, result_label,
+         DEPCOM, LIBCOM, 
         latitude,longitude,X,Y,
-        CONSTRUCT,SURFHAB,NBPIECE,
-        result_label) 
+        CONSTRUCT,SURFHAB,NBPIECE) 
 
 dim(sel)
 ```
@@ -151,6 +154,7 @@ Certaines variables doivent être recodées ou changées de type afin de facilit
 
 ```{r}
 sel$DEPCOM <- as.character(sel$DEPCOM)
+sel$LIBCOM <- as.factor(sel$LIBCOM)
 sel$PLG_IRIS <- paste(sel$DEPCOM,sel$PLG_IRIS, sep = "")
 sel$SURFHAB <- as.numeric(sel$SURFHAB)
 
@@ -159,12 +163,10 @@ sel$SURFHAB <- as.numeric(sel$SURFHAB)
 
 ## Résumé rapide
 
-On produit un résumé rapide des variables retenues :
+On analyse rapidement les variables thématiques choisies
 
-
-```{r}
-summary(sel[,4:10])
-
+```{r, echo=FALSE}
+kable(summary(sel[,c(9,10,11)]),)
 ```
 
 ## Sauvegarde du fichier
@@ -172,7 +174,7 @@ summary(sel[,4:10])
 On sauvegarde le fichier obtenu au format .RDS afin de garder le formatage des variables : 
 
 ```{r}
-saveRDS(sel,"data2021/94/RPLS2020_sel.RDS")
+saveRDS(sel,"data2021/94/sel_logt.RDS")
 ```
 
 
