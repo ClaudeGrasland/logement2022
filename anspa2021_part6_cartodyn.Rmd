@@ -1,0 +1,86 @@
+---
+title: "Analyse spatiale et territoriale de données de recensement"
+author: "C.GRASLAND"
+subtitle: Formation Carthageo-Geoprisme 2021 / 2e journée
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(xtable)
+library(survey)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(questionr)
+library(sf)
+library(mapsf)
+library(data.table)
+library(mapview)
+```
+
+
+
+# Cartographie dynamique
+
+
+## Statique ou dynamique ?
+
+- **Cartographie statique**
+  - production d'**images fixes** de qualité
+  - respect strict des règles de la **sémiologie graphique** 
+  - choix libre d'une **projection adaptée** (e.g. EPSG 2154) 
+  - production de **documents imprimés** à finalité normative ou scientifiques
+  
+
+- **Cartographie dynamique**
+  - production d'**interfaces** consultables dans un **navigateur**. 
+  - modification possible de l'**échelle** et de l'**arrière-plan** 
+  - **projection imposée** par les "tuiles" (*EPSG 4326*)
+  - production de **documents interactifs** à finalité citoyenne ou exploratoire
+
+
+## Packages R de cartographie dynamique
+
+- **leaflet :  la référence**
+  - Une **librairie javascript** non liée à un langage (R, Python, html, ...)
+  - Disponible dans R sous forme de package
+  - Développement constant
+
+- **ggmap :  l'empire contre attaque**
+  - des outils cartogaphiques utilisant la syntaxe de tidyverse
+  - impose désormais un lien avec Google
+
+- **tmap :  une solution hybride**
+  - permet de passer facilement du mode statique au mode dynamique
+
+- **mapview : l'équivalent de mapsf**
+  - mis au point par des développeurs allemands
+  - facilite l'usage de leaflet
+  - en progrès constant (mais instable) 
+
+## Préparation des données
+
+On charge les fichiers au format sf et on les transforme en projection WGS94 (EPSG=4326), condition indispensable pour ajouter des "tuiles" dynamiques lors des zoom.  
+
+```{r}
+map_com <- readRDS("data2021/94/sel_map_com.RDS") %>%
+              st_transform(4326)
+map_iris <- readRDS("data2021/94/sel_map_iris.RDS") %>%
+              st_transform(4326)
+map_logt <- readRDS("data2021/94/sel_map_logt.RDS") %>%
+              st_transform(4326)
+```
+
+## Cartes par défaut
+
+Mapview produit par défaut une carte dynamique dès lors qu'on lui fournit un fichier sf. Voici par exemple ce que donne notre fichier logement.
+
+```{r}
+mapview(map_logt)
+```
+
+
+
+
