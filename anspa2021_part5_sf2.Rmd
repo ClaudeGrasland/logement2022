@@ -48,6 +48,7 @@ logt <- readRDS("data2021/94/sel_logt.RDS") %>%
         select(adresse=result_id,
                X,Y,
                date = CONSTRUCT)
+
 ```
 
 ```{r, echo=FALSE}
@@ -141,9 +142,9 @@ Nous allons maintenant établir un fichier de localisation des adresses en nous 
 
 ```{r}
 adr <- logt %>% select(adresse,X,Y) %>% 
-               unique() 
+               filter(duplicated(adresse) == F) 
 
-dim(adr)
+
 ```
 
 On constate qu'il n'y a que 652 adresses différentes alors que notre fichier fait état de 8139 logements. Une adresse regroupe donc en moyenne plus de 10 logements (habitat collectif).
@@ -184,6 +185,8 @@ logt_by_adr <- logt %>%
                summarise(nblog = n(),
                          datemoy = mean(date))
 kable(head(logt_by_adr,10))
+
+
 ```
 
 ## Jointure 
