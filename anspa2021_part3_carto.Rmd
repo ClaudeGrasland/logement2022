@@ -1,14 +1,13 @@
 ---
-title: "Analyse spatiale et territoriale de données de recensement"
-author: "C.GRASLAND"
-date: "15/10/2020"
+title: "Analyse spatiale et territoriale du logement social"
+author: "Claude Grasland, Université de Paris (Diderot)"
+subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 output:
   beamer_presentation:
     colortheme: beaver
     fonttheme: structurebold
     theme: Madrid
   slidy_presentation: default
-subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +25,7 @@ library(mapsf)
 
 
 
-# Cartographie avec mapsf
+# Cartographie statique
 
 
 ##  Le package map_sf
@@ -488,4 +487,3 @@ mf_prop_choro( x = map_iris,  var = c("TOT", "HLMpct"),
 mf_layout(title = "Les ménages ordinaires en HLM dans le Val de Marne au RP 2017",
         frame = TRUE, credits = "Sources : IGN et INSEE")
 ```   
-

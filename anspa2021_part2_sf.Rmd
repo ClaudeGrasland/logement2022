@@ -1,14 +1,13 @@
 ---
-title: "Analyse spatiale et territoriale de données de recensement"
-author: "C.GRASLAND"
-date: "15/10/2020"
+title: "Analyse spatiale et territoriale du logement social"
+author: "Claude Grasland, Université de Paris (Diderot)"
+subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 output:
   beamer_presentation:
     colortheme: beaver
     fonttheme: structurebold
     theme: Madrid
   slidy_presentation: default
-subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +25,7 @@ library(cartography)
 
 
 
-# 2. Données spatiales (sf)
+# Localisation territoriale
 
 ##  Le format sf (spatial features)
 

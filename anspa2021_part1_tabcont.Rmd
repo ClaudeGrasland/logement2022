@@ -1,14 +1,13 @@
 ---
-title: "Analyse spatiale et territoriale de données de recensement"
-author: "Claude Grasland (U. Paris Diderot)"
-date: "04/10/2021"
+title: "Analyse spatiale et territoriale du logement social"
+author: "Claude Grasland, Université de Paris (Diderot)"
+subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 output:
   beamer_presentation:
     colortheme: beaver
     fonttheme: structurebold
     theme: Madrid
   slidy_presentation: default
-subtitle: Formation Carthageo-Geoprisme 2021 / 1ere journée
 ---
 
 ```{r setup, include=FALSE}
@@ -24,7 +23,7 @@ library(cartography)
 ```
 
 
-# 1.Analyse sociale : tableau de contingence
+# Données RP 2017
 
 
 ## Définir le sujet
