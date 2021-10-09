@@ -142,7 +142,8 @@ Nous allons maintenant établir un fichier de localisation des adresses en nous 
 
 ```{r}
 adr <- logt %>% select(adresse,X,Y) %>% 
-               filter(duplicated(adresse) == F) 
+               filter(duplicated(adresse) == F) %>%
+               filter(is.na(X) ==F,is.na(Y)==F)
 
 
 ```
