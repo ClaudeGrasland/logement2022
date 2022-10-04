@@ -1,6 +1,6 @@
 ---
 title: "Analyse spatiale et territoriale du logement social"
-author: "Claude Grasland, Université de Paris (Diderot)"
+author: "Claude Grasland, Université de Paris Cité"
 subtitle: Formation Carthageo-Geoprisme 2022 
 output:
   beamer_presentation:
@@ -12,13 +12,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-library(xtable)
-library(survey)
 library(knitr)
 library(dplyr)
-library(tidyr)
 library(ggplot2)
-library(questionr)
 library(sf)
 library(mapsf)
 ```
@@ -47,8 +43,8 @@ map_iris<-readRDS("data/map_iris.RDS")
 map_com <-readRDS("data/map_com.RDS")
 map_dep <-readRDS("data/map_dep.RDS")
 
-map_iris_hlm<-readRDS("tmp/map_iris_hlm.RDS")
-map_com_hlm<-readRDS("tmp/map_com_hlm.RDS")
+map_iris_hlm<-readRDS("data/map_iris_hlm.RDS")
+map_com_hlm<-readRDS("data/map_com_hlm.RDS")
 ```
 
 
@@ -67,7 +63,7 @@ La fonction `mf_map()` avec le paramètre `type = "base"`permet de tracer une ca
 ## tracé d'un fonds de carte vierge
 
 ### résultat
-```{r eval=TRUE,  echo=FALSE,, fig.height = 6}
+```{r eval=TRUE,  echo=FALSE,, fig.height = 5}
  mf_map(map_iris, type = "base")
 ```
 
@@ -85,7 +81,7 @@ mf_map(map_iris,  type = "base",
        col = "lightyellow", border="gray50",lwd=0.3)
 # Ajoute les contours des communes
 mf_map(map_com,  type = "base", 
-       col = NA,border="blue",lwd=0.6,
+       col = NA,border="red",lwd=0.6,
        add = TRUE)
 # Ajoute les contours des département
 mf_map(map_dep,  type = "base", 
@@ -105,7 +101,7 @@ mf_map(map_iris,  type = "base",
        col = "lightyellow", border="gray50",lwd=0.3)
 # Ajoute les contours des communes
 mf_map(map_com,  type = "base", 
-       col = NA,border="blue",lwd=0.6,
+       col = NA,border="red",lwd=0.6,
        add = TRUE)
 # Ajoute les contours des département
 mf_map(map_dep,  type = "base", 
@@ -124,17 +120,18 @@ On peut finalement modifier l'ensemble de la carte en lui ajoutant une instructi
 ### programme
 ```{r eval=FALSE, echo=TRUE}
 #Choix du thème
-mf_theme("candy")
+mf_theme("darkula")
 # Trace les Iris avec des paramètres
-mf_map(map_iris,  type = "base", 
-       col = "lightyellow", border="gray50",lwd=0.3)
+mf_map(map_iris,  type = "base",
+       border="white",
+        lwd=0.3)
 # Ajoute les contours des communes
 mf_map(map_com,  type = "base", 
-       col = NA,border="blue",lwd=0.6,
+       col = NA, lwd=1,
        add = TRUE)
 # Ajoute les contours des département
 mf_map(map_dep,  type = "base", 
-       col = NA,border="red",lwd=2,
+       col = NA, lwd=2,
        add = TRUE)
 # Ajoute un cadre, un titre et des sources
 mf_layout(title = "Paris & Petite Couronne", 
@@ -146,37 +143,18 @@ mf_layout(title = "Paris & Petite Couronne",
 ### résultat
 ```{r eval=TRUE,  echo=FALSE,, fig.height = 6}
 #Choix du thème
-mf_theme("candy")
-mf_map(map_iris,  type = "base", 
-       col = "lightyellow", border="gray50",lwd=0.3)
+mf_theme("darkula")
+# Trace les Iris avec des paramètres
+mf_map(map_iris,  type = "base",
+       border="white",
+        lwd=0.3)
 # Ajoute les contours des communes
 mf_map(map_com,  type = "base", 
-       col = NA,border="blue",lwd=0.6,
+       col = NA, lwd=1,
        add = TRUE)
 # Ajoute les contours des département
 mf_map(map_dep,  type = "base", 
-       col = NA,border="red",lwd=2,
-       add = TRUE)
-# Ajoute un cadre, un titre et des sources
-mf_layout(title = "Paris & Petite Couronne", 
-          credits = "Sources : IGN et INSEE")
-```
-
-## Ajout d'un thème
-
-### résultat
-```{r eval=TRUE,  echo=FALSE,, fig.height = 6}
-#Choix du thème
-mf_theme("dark")
-mf_map(map_iris,  type = "base", 
-       col = "lightyellow", border="gray50",lwd=0.3)
-# Ajoute les contours des communes
-mf_map(map_com,  type = "base", 
-       col = NA,border="blue",lwd=0.6,
-       add = TRUE)
-# Ajoute les contours des département
-mf_map(map_dep,  type = "base", 
-       col = NA,border="red",lwd=2,
+       col = NA, lwd=2,
        add = TRUE)
 # Ajoute un cadre, un titre et des sources
 mf_layout(title = "Paris & Petite Couronne", 
@@ -184,30 +162,10 @@ mf_layout(title = "Paris & Petite Couronne",
 ```
 
 
-## Ajout d'un thème
-
-### résultat
-```{r eval=TRUE,  echo=FALSE,, fig.height = 6}
-#Choix du thème
-mf_theme("agolalight")
-mf_map(map_iris,  type = "base", 
-       col = "lightyellow", border="gray50",lwd=0.3)
-# Ajoute les contours des communes
-mf_map(map_com,  type = "base", 
-       col = NA,border="blue",lwd=0.6,
-       add = TRUE)
-# Ajoute les contours des département
-mf_map(map_dep,  type = "base", 
-       col = NA,border="red",lwd=2,
-       add = TRUE)
-# Ajoute un cadre, un titre et des sources
-mf_layout(title = "Paris & Petite Couronne", 
-          credits = "Sources : IGN et INSEE")
-```
 
 ## Ajout de texte
 
-On peut ajouter une couche de texte avec la fonction `mf_label()`. Par exemple, on va ajouter à la carte précédente le nom des départements
+On peut ajouter une couche de texte avec la fonction `mf_label()`. Par exemple, on va ajouter à la carte précédente le code insee des communes
 
 
 ### programme
@@ -257,7 +215,7 @@ mf_map(map_dep,  type = "base",
 # Ajoute les codes des communes
 mf_label(map_com, 
          var="INSEE_COM",
-         cex=0.4, 
+         cex=0.7, 
          col="blue",
          overlap = FALSE)
 
@@ -291,7 +249,7 @@ mf_map(x= map_iris,
 # Ajoute le nombre de ménages par IRIS
 mf_map(x =map_iris_hlm, 
       type ="prop",
-      var = "HLM1",
+      var = "HLM_1",
       add=TRUE)
 ```
 
@@ -308,7 +266,7 @@ mf_map(x= map_iris,
 # Ajoute le nombre de ménages par IRIS
 mf_map(x =map_iris_hlm, 
       type ="prop",
-      var = "HLM1",
+      var = "HLM_1",
       add=TRUE)
 ```
 
@@ -325,7 +283,7 @@ mf_map(map_iris, type = "base",
 mf_map(map_com, type = "base", 
        col = NA,border="black",lwd=1,add = TRUE)
 
-mf_map(map_iris_hlm, var = "HLM1",type = "prop",
+mf_map(map_iris_hlm, var = "HLM_1",type = "prop",
   inches = 0.05, col = "red",leg_pos = "left",  
   leg_title = "Nombre de ménages", add=TRUE)
 
@@ -345,7 +303,7 @@ mf_map(map_iris, type = "base",
 mf_map(map_com, type = "base", 
        col = NA,border="black",lwd=1,add = TRUE)
 
-mf_map(map_iris_hlm, var = "HLM1",type = "prop",
+mf_map(map_iris_hlm, var = "HLM_1",type = "prop",
   inches = 0.05, col = "red",leg_pos = "left",  
   leg_title = "Nombre de ménages", add=TRUE)
 
@@ -372,7 +330,7 @@ Si on ne précise rien, la carte est réalisée à l'aide de la palette par déf
 # Carte choroplèthe
 mf_map(
   x = map_iris_hlm, 
-  var = "HLMpct",
+  var = "HLM_pct",
   type = "choro")
 ```
 
@@ -383,7 +341,7 @@ mf_map(
 # Carte choroplèthe
 mf_map(
   x = map_iris_hlm, 
-  var = "HLMpct",
+  var = "HLM_pct",
   type = "choro")
 ```
 
@@ -395,16 +353,22 @@ On peut arriver à une carte beaucoup plus satisfaisante en contrôlant l'ensemb
 
 ### programme
 ```{r eval=FALSE, echo=TRUE}
-mybreaks = c(0, 10,20,30,40,50,60,70,80,90, 100)
-mypal <- mf_get_pal(n = c(5, 5), pal = c("Greens", "Reds"))
+mybreaks = c(0, 10,20,30,40,50,
+             60,70,80,90, 100)
+mypal <- mf_get_pal(n = c(5, 5), 
+                    pal = c("Greens", "Reds"))
 # Carte choroplèthe des iris
-mf_map( map_iris_hlm, var = "HLMpct",type = "choro",
-  breaks = mybreaks,pal = mypal, border=NA,
-  col_na = "gray80",leg_title = "% HLM", leg_val_rnd = 0)
+mf_map( map_iris_hlm, var = "HLM_pct",
+        type = "choro",
+        breaks = mybreaks,pal = mypal, 
+        border=NA,
+       col_na = "gray80",leg_title = "% HLM",
+       leg_val_rnd = 0)
 # Contour des communes et cadre
 mf_map(map_com, type = "base", col = NA,
        border="black",lwd=1,add = TRUE)
-mf_layout(title = "% de ménages en HLM au RP  2018", frame = TRUE,
+mf_layout(title = "% de ménages en HLM au RP  2018", 
+          frame = TRUE,
           credits = "Sources : IGN et INSEE")
 ```
 
@@ -415,7 +379,7 @@ mf_layout(title = "% de ménages en HLM au RP  2018", frame = TRUE,
 mybreaks = c(0, 10,20,30,40,50,60,70,80,90, 100)
 mypal <- mf_get_pal(n = c(5, 5), pal = c("Greens", "Reds"))
 # Carte choroplèthe des iris
-mf_map( map_iris_hlm, var = "HLMpct",type = "choro",
+mf_map( map_iris_hlm, var = "HLM_pct",type = "choro",
   breaks = mybreaks,pal = mypal, border=NA,
   col_na = "gray80",leg_title = "% HLM", leg_val_rnd = 0)
 # Contour des communes et cadre
@@ -440,7 +404,7 @@ mybreaks = c(0,5,10,20,40,80,100)
 # Trace la carte choroplèthe
 mf_map(
   x = map_iris_hlm, 
-  var = "HLMpct",
+  var = "HLM_pct",
   breaks = mybreaks,
  # pal=mypal,
  type = "choro",
@@ -456,7 +420,7 @@ mf_map(
 
 mf_map(
   x =map_iris_hlm, 
-  var = "HLM1",
+  var = "HLM_1",
   type = "prop",
   inches = 0.06, 
   col = "red",
@@ -483,7 +447,7 @@ mf_layout(title = "Les ménages ordinaires en HLM  2018",
 
 ## Carte stock + choroplèthe (2)
 
-Mais on peut aussi utiliser le type `prop_choro` 
+Mais les cercles dissimuent alors les plages de couleur, aussi on peut utiliser le type `prop_choro` qui place la variable choroplèthe à l'intérieur des cercles
 
 ### programme
 ```{r eval=FALSE, echo=TRUE}
@@ -494,13 +458,13 @@ mf_map(map_iris_hlm, type = "base",
        col = "gray80",border="white", lwd=0.3)
 mf_map(map_com, type = "base", 
        col = NA,border="white",lwd=1,add = TRUE)
-mf_prop_choro( x = map_iris_hlm,  var = c("TOT", "HLMpct"), 
-  inches = 0.07, col_na = "grey", pal=mypal,
+mf_prop_choro( x = map_iris_hlm,  var = c("TOT", "HLM_pct"), 
+  inches = 0.06, col_na = "grey", pal=mypal,
   breaks = mybreaks, nbreaks = 4, lwd = 0.1,
   leg_pos = c("right", "left"),leg_val_rnd = c(0,0),
   leg_title = c("nb. ménages", "% HLM"),
   add = TRUE)
-mf_layout(title = "Les ménages ordinaires en HLM  2017", 
+mf_layout(title = "Les ménages ordinaires en HLM  2018", 
           frame = TRUE, credits = "Sources : IGN et INSEE")
 ```
 
@@ -515,12 +479,12 @@ mf_map(map_iris_hlm, type = "base",
        col = "gray80",border="white", lwd=0.3)
 mf_map(map_com, type = "base", 
        col = NA,border="white",lwd=1,add = TRUE)
-mf_prop_choro( x = map_iris_hlm,  var = c("TOT", "HLMpct"), 
-  inches = 0.08, col_na = "grey", pal=mypal,
+mf_prop_choro( x = map_iris_hlm,  var = c("TOT", "HLM_pct"), 
+  inches = 0.06, col_na = "grey", pal=mypal,
   breaks = mybreaks, nbreaks = 4, lwd = 0.1,
   leg_pos = c("right", "left"),leg_val_rnd = c(0,0),
   leg_title = c("nb. ménages", "% HLM"),
   add = TRUE)
-mf_layout(title = "Les ménages ordinaires en HLM dans le Val de Marne au RP 2017",
+mf_layout(title = "Les ménages ordinaires en HLM en 2018",
         frame = TRUE, credits = "Sources : IGN et INSEE")
 ```   

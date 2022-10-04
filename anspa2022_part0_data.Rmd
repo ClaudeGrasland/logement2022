@@ -297,7 +297,7 @@ Les données sur le logement social sont disponibles sur le site du ministère d
 
 https://www.statistiques.developpement-durable.gouv.fr/le-parc-locatif-social-au-1er-janvier-2020-0
 
-
+Nous avions téléchargé en 2021 une version de la RPLS 2020 qui comportait des données précises de géolocalisation en latitude longitude mais ces informations semblent avoir disparu depuis. On reprend donc les fichiers complets
 
 ### Etape 1 : téléchargement des données géolocalisées 
 
@@ -306,29 +306,22 @@ On choisit l'année 2018 pour être le plus en phase possible avec le recensemen
 Après téléchargement de l'année 2018, on récupère un dossier zippé avec des données par régions ou par département dans le cas de l'Ile de France.
 
 ```{r,eval=FALSE}
-library(curl)
-### Téléchargement du fichier INSEE
-myurl="https://www.statistiques.developpement-durable.gouv.fr/sites/default/files/2019-04/rpls-%202018-geolocalise-donnees-detaillees-au-logement_0.zip"
-mydestfile = "tmp/rpls2018.zip"
-curl_download(url=myurl, destfile=mydestfile)
-## Decompression du fichier INSEE
-unzip(zipfile = "tmp/rpls2018.zip",
-      exdir = "tmp")
+
 ## Examen du contenu
-list.files("tmp/2018")
+list.files("tmp/RPLS2020")
 ```
 
 
 ### Etape 2 : récupértation de Paris + PC
 
 ```{r}
-dep75<-fread("tmp/2018/RPLS2018_geoloc_detail_IDF_DEP_75.csv")
-dep92<-fread("tmp/2018/RPLS2018_geoloc_detail_IDF_DEP_92.csv")
-dep93<-fread("tmp/2018/RPLS2018_geoloc_detail_IDF_DEP_93.csv")
-dep94<-fread("tmp/2018/RPLS2018_geoloc_detail_IDF_DEP_94.csv")
+dep75<-readRDS("tmp/RPLS2020/RPLS2020_75.RDS")
+dep92<-readRDS("tmp/RPLS2020/RPLS2020_92.RDS")
+dep93<-readRDS("tmp/RPLS2020/RPLS2020_93.RDS")
+dep94<-readRDS("tmp/RPLS2020/RPLS2020_94.RDS")
 tab<-rbind(dep75,dep92,dep93,dep94)
 tab<-as.data.table(tab)
-saveRDS(tab,"data/RPLS2018.RDS")
+saveRDS(tab,"data/RPLS2020.RDS")
 ```
 
 
